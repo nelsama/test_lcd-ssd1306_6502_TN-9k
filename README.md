@@ -6,28 +6,43 @@ Demo completo del driver SSD1306 mostrando todas las capacidades del display OLE
 
 ## Demos Incluidos
 
-| # | Demo | Descripción | Archivo |
-|---|------|-------------|---------|
-| 1 | **Texto** | Fuente 5x7, 4 líneas, texto invertido | `main.c` |
-| 2 | **Números** | Decimal, con signo, hexadecimal 8/16 bits | `main.c` |
-| 3 | **BigFont** | Caracteres 15x15 px, reloj HH:MM | `main.c` |
-| 4 | **Gráficos** | Líneas, rectángulos, barra de progreso, iconos | `main.c` |
-| 5 | **Scroll** | Scroll horizontal izquierda/derecha | `main.c` |
-| 6 | **Control** | Fade de contraste, inversión de pantalla | `main.c` |
-| 7 | **Framebuffer** | Líneas diagonales, círculos, animación, gráficas | `main.c` |
+Este repositorio contiene **3 demos** que muestran diferentes capacidades del driver:
 
-### Demo Dedicado: Framebuffer Completo
+### 1. Demo Completo (`main.c`) - ~8 KB
+Muestra TODAS las características. Requiere configurar todos los módulos.
 
-| # | Demo | Descripción | Archivo |
-|---|------|-------------|---------|
-| D1 | **Píxeles** | Puntos aleatorios | `main_fb_demo.c` |
-| D2 | **Líneas** | Diagonales cruzadas (Bresenham) | `main_fb_demo.c` |
-| D3 | **Rectángulos** | Marcos anidados | `main_fb_demo.c` |
-| D4 | **Círculos** | Círculos concéntricos | `main_fb_demo.c` |
-| D5 | **Rellenos** | Círculos rellenos | `main_fb_demo.c` |
-| D6 | **Animación** | Pelota rebotando | `main_fb_demo.c` |
-| D7 | **Patrón XOR** | Efecto visual dinámico | `main_fb_demo.c` |
-| D8 | **Gráfica** | Scroll plot en tiempo real | `main_fb_demo.c` |
+### 2. Demo Features (`main_features_demo.c`) - ~7 KB
+Características de alto nivel **sin framebuffer**:
+
+| Demo | Descripción |
+|------|-------------|
+| Texto 5x7 | Normal e invertido, 4 líneas |
+| Números | Decimal, negativo, hex 8/16 bits |
+| BigFont | Reloj HH:MM, texto grande 15x15 |
+| Gráficos | Líneas con patrones, barra de progreso |
+| Scroll | Scroll horizontal izq/der |
+| Control | Fade de contraste, inversión |
+
+```bash
+make -f makefile_features_demo
+```
+
+### 3. Demo Framebuffer (`main_fb_demo.c`) - ~3 KB
+Gráficos a nivel de píxel:
+
+| Demo | Descripción |
+|------|-------------|
+| Píxeles | Puntos aleatorios |
+| Líneas | Diagonales Bresenham |
+| Rectángulos | Marcos anidados |
+| Círculos | Concéntricos y rellenos |
+| Animación | Pelota rebotando |
+| Patrón XOR | Efecto visual dinámico |
+| Gráfica | Scroll plot en tiempo real |
+
+```bash
+make -f makefile_fb_demo
+```
 
 ---
 
