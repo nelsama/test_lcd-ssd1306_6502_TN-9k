@@ -29,13 +29,14 @@ PLATAFORMA = D:\cc65\lib\none.lib
 CFLAGS = -t none -O --cpu 6502
 
 # ============================================
-# LIBRERÍAS
+# LIBRERÍAS - Config local ANTES de libs
 # ============================================
-UART_DIR = $(LIB_DIR)/uart
-I2C_DIR = $(LIB_DIR)/i2c
-SSD1306_DIR = $(LIB_DIR)/ssd1306
+UART_DIR = $(LIB_DIR)\uart
+I2C_DIR = $(LIB_DIR)\i2c
+SSD1306_DIR = $(LIB_DIR)\ssd1306
+SSD1306_CONFIG = $(CONFIG_DIR)\ssd1306_config_fb.h
 
-INCLUDES = -I$(UART_DIR) -I$(I2C_DIR) -I$(SSD1306_DIR)
+INCLUDES = -I$(CONFIG_DIR) -I$(LIB_DIR)
 
 # ============================================
 # ARCHIVOS OBJETO
@@ -60,7 +61,10 @@ OBJS = $(MAIN_OBJ) $(UART_OBJ) $(I2C_OBJ) $(STARTUP_OBJ) \
 TARGET = $(BUILD_DIR)/main_fb_demo.bin
 
 # Regla por defecto
-all: dirs $(TARGET) rom
+all: dirs config
+	@$(MAKE) -f makefile_fb_demo build_and_rom
+
+build_and_rom: $(TARGET) rom
 	@echo ========================================
 	@echo FRAMEBUFFER DEMO - COMPILADO
 	@echo ========================================
@@ -70,6 +74,10 @@ all: dirs $(TARGET) rom
 dirs:
 	@if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
 	@if not exist "$(OUTPUT_DIR)" mkdir "$(OUTPUT_DIR)"
+
+config:
+	@if not exist "$(CONFIG_DIR)\ssd1306" mkdir "$(CONFIG_DIR)\ssd1306"
+	@xcopy /Y /Q "$(SSD1306_CONFIG)" "$(CONFIG_DIR)\ssd1306\ssd1306_config.h*" >nul
 
 # ============================================
 # COMPILACIÓN
@@ -81,14 +89,14 @@ $(BUILD_DIR)/main_fb_demo.o: $(SRC_DIR)/main_fb_demo.c
 
 # UART
 $(BUILD_DIR)/uart.s: $(UART_DIR)/uart.c
-	$(CC65) $(CFLAGS) -o $@ $<
+	$(CC65) $(CFLAGS) $(INCLUDES) -o $@ $<
 
 $(BUILD_DIR)/uart.o: $(BUILD_DIR)/uart.s
 	$(CA65) -t none -o $@ $<
 
 # I2C
 $(BUILD_DIR)/i2c.s: $(I2C_DIR)/i2c.c
-	$(CC65) $(CFLAGS) -I$(I2C_DIR) -o $@ $<
+	$(CC65) $(CFLAGS) $(INCLUDES) -o $@ $<
 
 $(BUILD_DIR)/i2c.o: $(BUILD_DIR)/i2c.s
 	$(CA65) -t none -o $@ $<
@@ -99,14 +107,14 @@ $(BUILD_DIR)/startup.o: $(SRC_DIR)/startup.s
 
 # SSD1306 Core
 $(BUILD_DIR)/ssd1306_core.s: $(SSD1306_DIR)/core/ssd1306_core.c
-	$(CC65) $(CFLAGS) -I$(I2C_DIR) -I$(SSD1306_DIR) -o $@ $<
+	$(CC65) $(CFLAGS) $(INCLUDES) -o $@ $<
 
 $(BUILD_DIR)/ssd1306_core.o: $(BUILD_DIR)/ssd1306_core.s
 	$(CA65) -t none -o $@ $<
 
 # SSD1306 Framebuffer
 $(BUILD_DIR)/ssd1306_framebuffer.s: $(SSD1306_DIR)/framebuffer/ssd1306_framebuffer.c
-	$(CC65) $(CFLAGS) -I$(I2C_DIR) -I$(SSD1306_DIR) -o $@ $<
+	$(CC65) $(CFLAGS) $(INCLUDES) -o $@ $<
 
 $(BUILD_DIR)/ssd1306_framebuffer.o: $(BUILD_DIR)/ssd1306_framebuffer.s
 	$(CA65) -t none -o $@ $<
@@ -135,6 +143,7 @@ clean:
 	@if exist "$(BUILD_DIR)\*.s" del /Q "$(BUILD_DIR)\*.s"
 	@if exist "$(BUILD_DIR)\*.bin" del /Q "$(BUILD_DIR)\*.bin"
 	@if exist "$(BUILD_DIR)\*.map" del /Q "$(BUILD_DIR)\*.map"
+	@if exist "$(CONFIG_DIR)\ssd1306" rmdir /S /Q "$(CONFIG_DIR)\ssd1306"
 
 size: $(TARGET)
 	@echo.
@@ -142,4 +151,4 @@ size: $(TARGET)
 	@$(LD65) -C $(CONFIG) --start-addr 0x8000 -m $(BUILD_DIR)/fb_demo.map -o $(TARGET) $(OBJS) $(PLATAFORMA)
 	@findstr /C:"Segment list" /C:"Name " /C:"CODE" /C:"RODATA" /C:"BSS" $(BUILD_DIR)/fb_demo.map
 
-.PHONY: all dirs clean rom size
+.PHONY: all dirs config build_and_rom clean rom size

@@ -27,12 +27,13 @@ PLATAFORMA = D:\cc65\lib\none.lib
 CFLAGS = -t none -O --cpu 6502
 
 # ============================================
-# INCLUDES
+# INCLUDES - Config local ANTES de libs
 # ============================================
-UART_DIR = $(LIB_DIR)/uart
-I2C_DIR = $(LIB_DIR)/i2c
-SSD1306_DIR = $(LIB_DIR)/ssd1306
-INCLUDES = -I$(LIB_DIR)
+UART_DIR = $(LIB_DIR)\uart
+I2C_DIR = $(LIB_DIR)\i2c
+SSD1306_DIR = $(LIB_DIR)\ssd1306
+SSD1306_CONFIG = $(CONFIG_DIR)\ssd1306_config_features.h
+INCLUDES = -I$(CONFIG_DIR) -I$(LIB_DIR)
 
 # ============================================
 # ARCHIVOS OBJETO
@@ -61,7 +62,10 @@ OBJS = $(MAIN_OBJ) $(UART_OBJ) $(I2C_OBJ) $(STARTUP_OBJ) $(VECTORS_OBJ) $(SSD130
 # ============================================
 TARGET = $(BUILD_DIR)/main_features_demo.bin
 
-all: dirs $(TARGET) rom
+all: dirs config
+	@$(MAKE) -f makefile_features_demo build_and_rom
+
+build_and_rom: $(TARGET) rom
 	@echo ========================================
 	@echo FEATURES DEMO - COMPILADO
 	@echo ========================================
@@ -69,6 +73,10 @@ all: dirs $(TARGET) rom
 dirs:
 	@if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
 	@if not exist "$(OUTPUT_DIR)" mkdir "$(OUTPUT_DIR)"
+
+config:
+	@if not exist "$(CONFIG_DIR)\ssd1306" mkdir "$(CONFIG_DIR)\ssd1306"
+	@xcopy /Y /Q "$(SSD1306_CONFIG)" "$(CONFIG_DIR)\ssd1306\ssd1306_config.h*" >nul
 
 # ============================================
 # LINKER
@@ -85,9 +93,9 @@ rom: $(TARGET)
 	$(PYTHON) scripts/bin2rom3.py $(TARGET) -s 8192 -o $(OUTPUT_DIR)
 
 # ============================================
-# COMPILACIÓN
+# COMPILACIÓN - Todos los .o que usan ssd1306 dependen de config
 # ============================================
-$(BUILD_DIR)/main_features_demo.o: $(SRC_DIR)/main_features_demo.c
+$(BUILD_DIR)/main_features_demo.o: $(SRC_DIR)/main_features_demo.c | config
 	$(CL65) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
 $(BUILD_DIR)/uart.o: $(UART_DIR)/uart.c
@@ -121,6 +129,9 @@ $(BUILD_DIR)/ssd1306_numbers.o: $(SSD1306_DIR)/numbers/ssd1306_numbers.c
 $(BUILD_DIR)/ssd1306_bigfont.o: $(SSD1306_DIR)/bignum/ssd1306_bigfont.c
 	$(CL65) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
+$(BUILD_DIR)/ssd1306_bignum.o: $(SSD1306_DIR)/bignum/ssd1306_bignum.c
+	$(CL65) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+
 $(BUILD_DIR)/ssd1306_graphics.o: $(SSD1306_DIR)/graphics/ssd1306_graphics.c
 	$(CL65) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
@@ -133,5 +144,6 @@ $(BUILD_DIR)/ssd1306_scroll.o: $(SSD1306_DIR)/scroll/ssd1306_scroll.c
 clean:
 	@if exist "$(BUILD_DIR)\*.o" del /Q "$(BUILD_DIR)\*.o"
 	@if exist "$(BUILD_DIR)\*.bin" del /Q "$(BUILD_DIR)\*.bin"
+	@if exist "$(CONFIG_DIR)\ssd1306" rmdir /S /Q "$(CONFIG_DIR)\ssd1306"
 
-.PHONY: all dirs rom clean
+.PHONY: all dirs config rom clean
