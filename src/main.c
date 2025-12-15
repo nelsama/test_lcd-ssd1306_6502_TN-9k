@@ -9,6 +9,7 @@
  *   - Gráficos (líneas, rectángulos, barra progreso)
  *   - Scroll
  *   - Control (contraste, inversión)
+ *   - Framebuffer (píxeles, líneas diagonales, círculos)
  */
 
 #include <stdint.h>
@@ -218,6 +219,100 @@ void demo_control(void) {
 }
 
 /* ============================================
+ * DEMO 7: Framebuffer (píxeles individuales)
+ * ============================================ */
+#if SSD1306_USE_FRAMEBUFFER
+void demo_framebuffer(void) {
+    uint8_t i;
+    int8_t x, y;
+    
+    uart_puts("Demo 7: Framebuffer\r\n");
+    
+    /* Líneas diagonales */
+    uart_puts("   Lineas diagonales\r\n");
+    fb_clear();
+    fb_line(0, 0, 127, 31);     /* Diagonal \\ */
+    fb_line(0, 31, 127, 0);     /* Diagonal / */
+    fb_flush();
+    delay_sec(1);
+    
+    /* Rectángulo con diagonales */
+    fb_clear();
+    fb_rect(10, 2, 108, 28);    /* Marco */
+    fb_line(10, 2, 117, 29);    /* Diagonal */
+    fb_line(10, 29, 117, 2);    /* Diagonal */
+    fb_flush();
+    delay_sec(1);
+    
+    /* Círculos */
+    uart_puts("   Circulos\r\n");
+    fb_clear();
+    fb_circle(32, 16, 14);      /* Círculo izquierdo */
+    fb_circle(96, 16, 14);      /* Círculo derecho */
+    fb_circle(64, 16, 10);      /* Círculo central */
+    fb_flush();
+    delay_sec(1);
+    
+#if SSD1306_USE_FB_FILL
+    /* Círculos rellenos */
+    uart_puts("   Circulos rellenos\r\n");
+    fb_clear();
+    fb_circle_filled(32, 16, 12);
+    fb_circle_filled(64, 16, 8);
+    fb_circle_filled(96, 16, 12);
+    fb_flush();
+    delay_sec(1);
+    
+    /* Rectángulos rellenos */
+    uart_puts("   Rectangulos rellenos\r\n");
+    fb_clear();
+    fb_rect_filled(5, 4, 30, 24);
+    fb_rect_filled(45, 8, 38, 16);
+    fb_rect_filled(93, 4, 30, 24);
+    fb_flush();
+    delay_sec(1);
+#endif
+    
+    /* Animación: círculo moviéndose */
+    uart_puts("   Animacion\r\n");
+    for (x = 10; x < 118; x += 4) {
+        fb_clear();
+        fb_circle(x, 16, 8);
+        fb_flush();
+        delay(3000);
+    }
+    
+#if SSD1306_USE_FB_PLOT
+    /* Gráfica de datos */
+    uart_puts("   Grafica de datos\r\n");
+    fb_clear();
+    /* Simular datos tipo senoide */
+    for (i = 0; i < 128; i++) {
+        /* Onda simple: sube y baja */
+        if (i < 32) y = i;
+        else if (i < 64) y = 63 - i;
+        else if (i < 96) y = i - 64;
+        else y = 127 - i;
+        fb_set_pixel(i, 31 - (y >> 1));  /* Escalar a 0-31 */
+    }
+    fb_flush();
+    delay_sec(2);
+#endif
+    
+    /* Patrón de píxeles */
+    uart_puts("   Patron pixeles\r\n");
+    fb_clear();
+    for (y = 0; y < 32; y += 2) {
+        for (x = 0; x < 128; x += 2) {
+            fb_set_pixel(x, y);
+        }
+    }
+    fb_flush();
+    delay_sec(1);
+}
+#endif /* SSD1306_USE_FRAMEBUFFER */
+
+/* ============================================
  * PROGRAMA PRINCIPAL
  * ============================================ */
 int main(void) {
@@ -244,6 +339,9 @@ int main(void) {
         demo_graphics();
         demo_scroll();
         demo_control();
+#if SSD1306_USE_FRAMEBUFFER
+        demo_framebuffer();
+#endif
         
         uart_puts("\r\n--- Reiniciando demo ---\r\n\r\n");
     }
