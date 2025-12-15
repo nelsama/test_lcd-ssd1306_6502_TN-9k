@@ -1,0 +1,123 @@
+# Makefile MÍNIMO para RELOJ - Solo bignum
+# Tamaño reducido: ~1.5KB vs ~7KB completo
+
+# ============================================
+# DIRECTORIOS
+# ============================================
+SRC_DIR = src
+LIB_DIR = libs
+BUILD_DIR = build
+OUTPUT_DIR = output
+CONFIG_DIR = config
+SCRIPTS_DIR = scripts
+
+# ============================================
+# HERRAMIENTAS
+# ============================================
+CC65 = cc65
+CA65 = ca65
+LD65 = ld65
+CL65 = cl65
+PYTHON = py
+
+# ============================================
+# CONFIGURACIÓN
+# ============================================
+CONFIG = $(CONFIG_DIR)/fpga.cfg
+PLATAFORMA = D:\cc65\lib\none.lib
+CFLAGS = -t none -O --cpu 6502
+
+# ============================================
+# LIBRERÍAS
+# ============================================
+UART_DIR = $(LIB_DIR)/uart
+I2C_DIR = $(LIB_DIR)/i2c
+SSD1306_DIR = $(LIB_DIR)/ssd1306
+
+INCLUDES = -I$(UART_DIR) -I$(I2C_DIR) -I$(SSD1306_DIR)
+
+# ============================================
+# ARCHIVOS OBJETO - MÍNIMOS PARA RELOJ
+# ============================================
+MAIN_OBJ = $(BUILD_DIR)/main_clock.o
+UART_OBJ = $(BUILD_DIR)/uart.o
+I2C_OBJ = $(BUILD_DIR)/i2c.o
+VECTORS_OBJ = $(BUILD_DIR)/simple_vectors.o
+
+# SSD1306 - Solo lo necesario
+SSD1306_CORE_OBJ = $(BUILD_DIR)/ssd1306_core.o
+SSD1306_CONTROL_OBJ = $(BUILD_DIR)/ssd1306_control.o
+SSD1306_BIGNUM_OBJ = $(BUILD_DIR)/ssd1306_bignum.o
+
+# Todos los objetos
+OBJS = $(MAIN_OBJ) $(UART_OBJ) $(I2C_OBJ) \
+       $(SSD1306_CORE_OBJ) $(SSD1306_CONTROL_OBJ) $(SSD1306_BIGNUM_OBJ) \
+       $(VECTORS_OBJ)
+
+# ============================================
+# TARGET PRINCIPAL
+# ============================================
+TARGET = $(BUILD_DIR)/clock.bin
+
+all: dirs $(TARGET) rom
+	@echo ========================================
+	@echo RELOJ COMPILADO - Configuracion minima
+	@echo ========================================
+	@echo VHDL: $(OUTPUT_DIR)/rom.vhd
+	@echo ========================================
+
+dirs:
+	@if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
+	@if not exist "$(OUTPUT_DIR)" mkdir "$(OUTPUT_DIR)"
+
+# ============================================
+# COMPILACIÓN - Usar config de reloj
+# ============================================
+
+# Copiar config de reloj antes de compilar
+config_clock:
+	@copy /Y "$(SSD1306_DIR)\ssd1306_config_clock.h" "$(SSD1306_DIR)\ssd1306_config.h"
+
+$(MAIN_OBJ): $(SRC_DIR)/main_clock.c config_clock
+	$(CL65) -t none $(INCLUDES) -c -o $@ $(SRC_DIR)/main_clock.c
+
+$(UART_OBJ): $(UART_DIR)/uart.c
+	$(CC65) $(CFLAGS) -o $(BUILD_DIR)/uart.s $<
+	$(CA65) -t none -o $@ $(BUILD_DIR)/uart.s
+
+$(I2C_OBJ): $(I2C_DIR)/i2c.c
+	$(CC65) $(CFLAGS) -I$(I2C_DIR) -o $(BUILD_DIR)/i2c.s $<
+	$(CA65) -t none -o $@ $(BUILD_DIR)/i2c.s
+
+$(VECTORS_OBJ): $(SRC_DIR)/simple_vectors.s
+	$(CA65) -t none -o $@ $<
+
+# SSD1306 Módulos mínimos
+$(SSD1306_CORE_OBJ): $(SSD1306_DIR)/core/ssd1306_core.c config_clock
+	$(CC65) $(CFLAGS) -I$(I2C_DIR) -I$(SSD1306_DIR) -o $(BUILD_DIR)/ssd1306_core.s $<
+	$(CA65) -t none -o $@ $(BUILD_DIR)/ssd1306_core.s
+
+$(SSD1306_CONTROL_OBJ): $(SSD1306_DIR)/core/ssd1306_control.c config_clock
+	$(CC65) $(CFLAGS) -I$(I2C_DIR) -I$(SSD1306_DIR) -o $(BUILD_DIR)/ssd1306_control.s $<
+	$(CA65) -t none -o $@ $(BUILD_DIR)/ssd1306_control.s
+
+$(SSD1306_BIGNUM_OBJ): $(SSD1306_DIR)/bignum/ssd1306_bignum.c config_clock
+	$(CC65) $(CFLAGS) -I$(I2C_DIR) -I$(SSD1306_DIR) -o $(BUILD_DIR)/ssd1306_bignum.s $<
+	$(CA65) -t none -o $@ $(BUILD_DIR)/ssd1306_bignum.s
+
+# Enlazado
+$(TARGET): $(OBJS)
+	$(LD65) -C $(CONFIG) --start-addr 0x8000 -o $@ $(OBJS) $(PLATAFORMA)
+
+# ROM
+rom: $(TARGET)
+	$(PYTHON) $(SCRIPTS_DIR)/bin2rom3.py $(TARGET) -s 8192 --name rom --data-width 8 -o $(OUTPUT_DIR)
+
+# Restaurar config original
+restore_config:
+	@copy /Y "$(SSD1306_DIR)\ssd1306_config_full.h" "$(SSD1306_DIR)\ssd1306_config.h"
+
+clean:
+	@if exist "$(BUILD_DIR)" rmdir /s /q "$(BUILD_DIR)"
+
+.PHONY: all dirs rom clean config_clock restore_config

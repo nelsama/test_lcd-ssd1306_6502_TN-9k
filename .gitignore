@@ -1,0 +1,22 @@
+# Directorios de librerías (repositorios independientes)
+libs/
+
+# Archivos compilados
+build/
+*.o
+*.s
+*.bin
+
+# Archivos generados
+output/
+
+# Archivos temporales
+*.bak
+*.backup
+*.old
+*.tmp
+
+# Editor
+.vscode/
+*.swp
+*~
