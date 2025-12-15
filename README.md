@@ -38,23 +38,6 @@ make -f makefile_features_demo
 - Scroll horizontal izquierda/derecha
 - Control de contraste e inversión
 
-**Configuración requerida** (`ssd1306_config.h`):
-```c
-#define SSD1306_USE_CORE            1
-#define SSD1306_USE_FONT_5X7_FULL   1
-#define SSD1306_USE_TEXT            1
-#define SSD1306_USE_TEXT_INV        1
-#define SSD1306_USE_NUMBERS         1
-#define SSD1306_USE_NUMBERS_HEX     1
-#define SSD1306_USE_BIGNUM          1
-#define SSD1306_BIGNUM_LETTERS      1
-#define SSD1306_USE_GRAPHICS        1
-#define SSD1306_USE_PROGRESS        1
-#define SSD1306_USE_SCROLL          1
-#define SSD1306_USE_CONTROL         1
-#define SSD1306_USE_FRAMEBUFFER     0   // Desactivado
-```
-
 ---
 
 ### Demo Framebuffer (Gráficos a nivel de píxel)
@@ -73,7 +56,45 @@ make -f makefile_fb_demo
 - Patrón XOR dinámico
 - Gráfica con scroll en tiempo real
 
-**Configuración requerida** (`ssd1306_config.h`):
+---
+
+## Configuración Automática
+
+Cada demo tiene su propio archivo de configuración en `config/`:
+
+| Demo | Archivo de configuración |
+|------|--------------------------|
+| Features | `config/ssd1306_config_features.h` |
+| Framebuffer | `config/ssd1306_config_fb.h` |
+
+**El makefile copia automáticamente** el archivo de configuración correcto antes de compilar. **No necesitas modificar la librería**.
+
+### ¿Cómo funciona?
+
+1. Los makefiles copian `config/ssd1306_config_*.h` → `config/ssd1306/ssd1306_config.h`
+2. El compilador busca primero en `-Iconfig` antes que en `-Ilibs`
+3. La librería usa `#include <ssd1306/ssd1306_config.h>` que encuentra el config local
+
+### Configuración Features (`config/ssd1306_config_features.h`)
+
+```c
+#define SSD1306_USE_CORE            1
+#define SSD1306_USE_FONT_5X7_FULL   1
+#define SSD1306_USE_TEXT            1
+#define SSD1306_USE_TEXT_INV        1
+#define SSD1306_USE_NUMBERS         1
+#define SSD1306_USE_NUMBERS_HEX     1
+#define SSD1306_USE_BIGNUM          1
+#define SSD1306_BIGNUM_LETTERS      1
+#define SSD1306_USE_GRAPHICS        1
+#define SSD1306_USE_PROGRESS        1
+#define SSD1306_USE_SCROLL          1
+#define SSD1306_USE_CONTROL         1
+#define SSD1306_USE_FRAMEBUFFER     0   // Desactivado
+```
+
+### Configuración Framebuffer (`config/ssd1306_config_fb.h`)
+
 ```c
 #define SSD1306_USE_CORE            1
 #define SSD1306_USE_FRAMEBUFFER     1
@@ -81,7 +102,7 @@ make -f makefile_fb_demo
 #define SSD1306_USE_FB_CIRCLE       1
 #define SSD1306_USE_FB_FILL         1
 #define SSD1306_USE_FB_PLOT         1
-// Todo lo demás en 0
+// Todo lo demás usa valores por defecto (0)
 ```
 
 ---
@@ -140,12 +161,14 @@ test_lcd-ssd1306_6502_TN-9k/
 │   ├── main_fb_demo.c          # Demo Framebuffer (~3 KB)
 │   ├── startup.s               # Código de arranque
 │   └── simple_vectors.s        # Vectores 6502
+├── config/
+│   ├── fpga.cfg                # Configuración linker cc65
+│   ├── ssd1306_config_features.h  # Config para demo Features
+│   └── ssd1306_config_fb.h        # Config para demo Framebuffer
 ├── libs/                       # Librerías (no incluidas)
 │   ├── ssd1306/                # Driver OLED (clonar)
 │   ├── i2c/                    # Driver I2C (agregar)
 │   └── uart/                   # Driver UART (agregar)
-├── config/
-│   └── fpga.cfg                # Configuración linker cc65
 ├── scripts/
 │   └── bin2rom3.py             # Conversor BIN → VHDL
 ├── build/                      # Archivos compilados
@@ -179,7 +202,27 @@ test_lcd-ssd1306_6502_TN-9k/
 
 ⚠️ **Configuración de Memoria**: La RAM debe comenzar en `$0200` o superior en `config/fpga.cfg` para evitar conflictos con el stack de hardware del 6502.
 
-⚠️ **Cambiar entre demos**: Recuerda modificar `libs/ssd1306/ssd1306_config.h` según el demo que quieras compilar.
+✅ **Cambiar entre demos**: Solo ejecuta el makefile correspondiente. La configuración se aplica automáticamente.
+
+---
+
+## Crear tu Propio Proyecto
+
+Para crear un proyecto nuevo usando esta librería:
+
+1. Crea un archivo `config/ssd1306/ssd1306_config.h` con los módulos que necesites
+2. Compila con `-Iconfig -Ilibs` (config primero)
+3. La librería usará tu configuración local
+
+Ejemplo mínimo:
+```c
+#ifndef SSD1306_CONFIG_H
+#define SSD1306_CONFIG_H
+#define SSD1306_USE_CORE 1
+#define SSD1306_USE_TEXT 1
+#define SSD1306_USE_FONT_5X7_FULL 1
+#endif
+```
 
 ---
 
