@@ -86,39 +86,3 @@ El demo ejecuta 6 secciones en bucle:
 ## Licencia
 
 MIT License
-
-### Cargar en FPGA
-Copiar `output/rom.vhd` al proyecto FPGA y sintetizar.
-
-## Efectos de Luces
-
-El programa ejecuta 4 efectos en bucle infinito:
-
-| Efecto | Descripción |
-|--------|-------------|
-| Knight Rider | LED que recorre de izquierda a derecha y regresa |
-| Llenado | LEDs se llenan desde los extremos hacia el centro |
-| Alternado | Parpadeo alternado (010101 ↔ 101010) |
-| Contador | Contador binario de 0 a 63 |
-
-## Mapa de Memoria
-
-| Región | Dirección | Tamaño | Descripción |
-|--------|-----------|--------|-------------|
-| Zero Page | $0002-$00FF | 254 bytes | Variables rápidas |
-| RAM | $0100-$3DFF | ~15 KB | RAM principal |
-| Stack | $3E00-$3FFF | 512 bytes | Pila del sistema |
-| ROM | $8000-$9FF9 | 8 KB | Código del programa |
-| Vectores | $9FFA-$9FFF | 6 bytes | NMI, RESET, IRQ |
-| I/O | $C000-$C003 | 4 bytes | Puertos de E/S |
-
-## Requisitos
-
-- [cc65](https://cc65.github.io/) - Compilador C para 6502 (instalado en `D:\cc65`)
-- Python 3 - Para el script bin2rom3.py
-- FPGA Tang Nano 9K (o compatible)
-- 6 LEDs conectados a los bits 0-5 del puerto $C001
-
-## Licencia
-
-MIT
