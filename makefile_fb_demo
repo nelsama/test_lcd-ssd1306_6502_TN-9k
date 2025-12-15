@@ -1,0 +1,145 @@
+# Makefile para Demo Framebuffer SSD1306
+# Configuración MÍNIMA: Core + Framebuffer completo
+# ROM: ~2.5 KB | RAM: 640 bytes
+
+# ============================================
+# DIRECTORIOS
+# ============================================
+SRC_DIR = src
+LIB_DIR = libs
+BUILD_DIR = build
+OUTPUT_DIR = output
+CONFIG_DIR = config
+SCRIPTS_DIR = scripts
+
+# ============================================
+# HERRAMIENTAS
+# ============================================
+CC65 = cc65
+CA65 = ca65
+LD65 = ld65
+CL65 = cl65
+PYTHON = py
+
+# ============================================
+# CONFIGURACIÓN
+# ============================================
+CONFIG = $(CONFIG_DIR)/fpga.cfg
+PLATAFORMA = D:\cc65\lib\none.lib
+CFLAGS = -t none -O --cpu 6502
+
+# ============================================
+# LIBRERÍAS
+# ============================================
+UART_DIR = $(LIB_DIR)/uart
+I2C_DIR = $(LIB_DIR)/i2c
+SSD1306_DIR = $(LIB_DIR)/ssd1306
+
+INCLUDES = -I$(UART_DIR) -I$(I2C_DIR) -I$(SSD1306_DIR)
+
+# ============================================
+# ARCHIVOS OBJETO
+# ============================================
+MAIN_OBJ = $(BUILD_DIR)/main_fb_demo.o
+UART_OBJ = $(BUILD_DIR)/uart.o
+I2C_OBJ = $(BUILD_DIR)/i2c.o
+STARTUP_OBJ = $(BUILD_DIR)/startup.o
+VECTORS_OBJ = $(BUILD_DIR)/simple_vectors.o
+
+# SSD1306 - Solo Core + Framebuffer
+SSD1306_CORE_OBJ = $(BUILD_DIR)/ssd1306_core.o
+SSD1306_FRAMEBUFFER_OBJ = $(BUILD_DIR)/ssd1306_framebuffer.o
+
+# Todos los objetos (MÍNIMO)
+OBJS = $(MAIN_OBJ) $(UART_OBJ) $(I2C_OBJ) $(STARTUP_OBJ) \
+       $(SSD1306_CORE_OBJ) $(SSD1306_FRAMEBUFFER_OBJ) $(VECTORS_OBJ)
+
+# ============================================
+# TARGET
+# ============================================
+TARGET = $(BUILD_DIR)/main_fb_demo.bin
+
+# Regla por defecto
+all: dirs $(TARGET) rom
+	@echo ========================================
+	@echo FRAMEBUFFER DEMO - COMPILADO
+	@echo ========================================
+	@echo VHDL: $(OUTPUT_DIR)/rom.vhd
+	@echo ========================================
+
+dirs:
+	@if not exist "$(BUILD_DIR)" mkdir "$(BUILD_DIR)"
+	@if not exist "$(OUTPUT_DIR)" mkdir "$(OUTPUT_DIR)"
+
+# ============================================
+# COMPILACIÓN
+# ============================================
+
+# Main Demo
+$(BUILD_DIR)/main_fb_demo.o: $(SRC_DIR)/main_fb_demo.c
+	$(CL65) -t none $(INCLUDES) -c -o $@ $<
+
+# UART
+$(BUILD_DIR)/uart.s: $(UART_DIR)/uart.c
+	$(CC65) $(CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/uart.o: $(BUILD_DIR)/uart.s
+	$(CA65) -t none -o $@ $<
+
+# I2C
+$(BUILD_DIR)/i2c.s: $(I2C_DIR)/i2c.c
+	$(CC65) $(CFLAGS) -I$(I2C_DIR) -o $@ $<
+
+$(BUILD_DIR)/i2c.o: $(BUILD_DIR)/i2c.s
+	$(CA65) -t none -o $@ $<
+
+# Startup
+$(BUILD_DIR)/startup.o: $(SRC_DIR)/startup.s
+	$(CA65) -t none -o $@ $<
+
+# SSD1306 Core
+$(BUILD_DIR)/ssd1306_core.s: $(SSD1306_DIR)/core/ssd1306_core.c
+	$(CC65) $(CFLAGS) -I$(I2C_DIR) -I$(SSD1306_DIR) -o $@ $<
+
+$(BUILD_DIR)/ssd1306_core.o: $(BUILD_DIR)/ssd1306_core.s
+	$(CA65) -t none -o $@ $<
+
+# SSD1306 Framebuffer
+$(BUILD_DIR)/ssd1306_framebuffer.s: $(SSD1306_DIR)/framebuffer/ssd1306_framebuffer.c
+	$(CC65) $(CFLAGS) -I$(I2C_DIR) -I$(SSD1306_DIR) -o $@ $<
+
+$(BUILD_DIR)/ssd1306_framebuffer.o: $(BUILD_DIR)/ssd1306_framebuffer.s
+	$(CA65) -t none -o $@ $<
+
+# Vectores
+$(BUILD_DIR)/simple_vectors.o: $(SRC_DIR)/simple_vectors.s
+	$(CA65) -t none -o $@ $<
+
+# ============================================
+# LINK
+# ============================================
+$(TARGET): $(OBJS)
+	$(LD65) -C $(CONFIG) --start-addr 0x8000 -o $@ $(OBJS) $(PLATAFORMA)
+
+# ============================================
+# GENERAR ROM
+# ============================================
+rom: $(TARGET)
+	$(PYTHON) $(SCRIPTS_DIR)/bin2rom3.py $(TARGET) -s 8192 --name rom --data-width 8 -o $(OUTPUT_DIR)
+
+# ============================================
+# UTILIDADES
+# ============================================
+clean:
+	@if exist "$(BUILD_DIR)\*.o" del /Q "$(BUILD_DIR)\*.o"
+	@if exist "$(BUILD_DIR)\*.s" del /Q "$(BUILD_DIR)\*.s"
+	@if exist "$(BUILD_DIR)\*.bin" del /Q "$(BUILD_DIR)\*.bin"
+	@if exist "$(BUILD_DIR)\*.map" del /Q "$(BUILD_DIR)\*.map"
+
+size: $(TARGET)
+	@echo.
+	@echo === TAMAÑO DE SEGMENTOS ===
+	@$(LD65) -C $(CONFIG) --start-addr 0x8000 -m $(BUILD_DIR)/fb_demo.map -o $(TARGET) $(OBJS) $(PLATAFORMA)
+	@findstr /C:"Segment list" /C:"Name " /C:"CODE" /C:"RODATA" /C:"BSS" $(BUILD_DIR)/fb_demo.map
+
+.PHONY: all dirs clean rom size

@@ -6,15 +6,28 @@ Demo completo del driver SSD1306 mostrando todas las capacidades del display OLE
 
 ## Demos Incluidos
 
-| # | Demo | Descripción |
-|---|------|-------------|
-| 1 | **Texto** | Fuente 5x7, 4 líneas, texto invertido |
-| 2 | **Números** | Decimal, con signo, hexadecimal 8/16 bits |
-| 3 | **BigFont** | Caracteres 15x15 px, reloj HH:MM |
-| 4 | **Gráficos** | Líneas, rectángulos, barra de progreso, iconos |
-| 5 | **Scroll** | Scroll horizontal izquierda/derecha |
-| 6 | **Control** | Fade de contraste, inversión de pantalla |
-| 7 | **Framebuffer** | Líneas diagonales, círculos, animación, gráficas |
+| # | Demo | Descripción | Archivo |
+|---|------|-------------|---------|
+| 1 | **Texto** | Fuente 5x7, 4 líneas, texto invertido | `main.c` |
+| 2 | **Números** | Decimal, con signo, hexadecimal 8/16 bits | `main.c` |
+| 3 | **BigFont** | Caracteres 15x15 px, reloj HH:MM | `main.c` |
+| 4 | **Gráficos** | Líneas, rectángulos, barra de progreso, iconos | `main.c` |
+| 5 | **Scroll** | Scroll horizontal izquierda/derecha | `main.c` |
+| 6 | **Control** | Fade de contraste, inversión de pantalla | `main.c` |
+| 7 | **Framebuffer** | Líneas diagonales, círculos, animación, gráficas | `main.c` |
+
+### Demo Dedicado: Framebuffer Completo
+
+| # | Demo | Descripción | Archivo |
+|---|------|-------------|---------|
+| D1 | **Píxeles** | Puntos aleatorios | `main_fb_demo.c` |
+| D2 | **Líneas** | Diagonales cruzadas (Bresenham) | `main_fb_demo.c` |
+| D3 | **Rectángulos** | Marcos anidados | `main_fb_demo.c` |
+| D4 | **Círculos** | Círculos concéntricos | `main_fb_demo.c` |
+| D5 | **Rellenos** | Círculos rellenos | `main_fb_demo.c` |
+| D6 | **Animación** | Pelota rebotando | `main_fb_demo.c` |
+| D7 | **Patrón XOR** | Efecto visual dinámico | `main_fb_demo.c` |
+| D8 | **Gráfica** | Scroll plot en tiempo real | `main_fb_demo.c` |
 
 ---
 
@@ -92,6 +105,7 @@ make clean
 test_lcd-ssd1306_6502_TN-9k/
 ├── src/
 │   ├── main.c              # Demo completo (7 secciones)
+│   ├── main_fb_demo.c      # Demo framebuffer dedicado (8 secciones)
 │   └── main_clock.c        # Ejemplo reloj simple
 ├── libs/                   # Librerías (no incluidas)
 │   ├── ssd1306/            # Driver OLED (clonar)
@@ -105,6 +119,7 @@ test_lcd-ssd1306_6502_TN-9k/
 ├── output/                 # ROM generada
 ├── makefile                # Compilación principal
 ├── makefile_clock          # Solo reloj
+├── makefile_fb_demo        # Demo framebuffer (requiere menos ROM)
 └── README.md
 ```
 
@@ -225,6 +240,47 @@ test_lcd-ssd1306_6502_TN-9k/
 
 ---
 
+## Demo Framebuffer Dedicado (main_fb_demo.c)
+
+Demo especializado que muestra todas las capacidades del módulo framebuffer (~3 KB ROM, 512 B RAM).
+
+### Compilación
+
+```bash
+make -f makefile_fb_demo
+```
+
+### Demos incluidos
+
+| Demo | Descripción |
+|------|-------------|
+| D1: Píxeles | 32 puntos aleatorios usando `fb_set_pixel()` |
+| D2: Líneas | Diagonales cruzadas con algoritmo Bresenham |
+| D3: Rectángulos | 3 marcos anidados con `fb_rect()` |
+| D4: Círculos | 3 círculos concéntricos |
+| D5: Rellenos | Círculo relleno con `fb_circle_filled()` |
+| D6: Animación | Pelota rebotando en los bordes |
+| D7: Patrón XOR | Efecto visual usando `fb_toggle_pixel()` |
+| D8: Gráfica | Onda senoidal con scroll usando `fb_plot_scroll()` |
+
+### Requisitos de configuración
+
+El demo requiere esta configuración en `ssd1306_config.h`:
+
+```c
+#define SSD1306_USE_CORE            1
+#define SSD1306_USE_FRAMEBUFFER     1
+#define SSD1306_USE_FB_LINE         1
+#define SSD1306_USE_FB_CIRCLE       1
+#define SSD1306_USE_FB_FILL         1
+#define SSD1306_USE_FB_PLOT         1
+// Todo lo demás en 0
+```
+
+> **⚠️ IMPORTANTE:** La RAM debe comenzar en `$0200` o superior en `fpga.cfg` para evitar conflictos con el stack de hardware del 6502.
+
+---
+
 ## Archivos Principales
 
 ### main.c
@@ -240,6 +296,23 @@ while (1) {
     demo_scroll();
     demo_control();
     demo_framebuffer();  // Requiere FRAMEBUFFER=1
+}
+```
+
+### main_fb_demo.c
+
+Demo dedicado al framebuffer con 8 secciones (~3 KB ROM, 512 B RAM):
+
+```c
+while (1) {
+    demo_pixels();         // D1: Puntos aleatorios
+    demo_lines();          // D2: Líneas Bresenham
+    demo_rectangles();     // D3: Rectángulos anidados
+    demo_circles();        // D4: Círculos concéntricos
+    demo_filled_circles(); // D5: Círculos rellenos
+    demo_bounce();         // D6: Animación pelota
+    demo_xor_pattern();    // D7: Patrón XOR
+    demo_scroll_plot();    // D8: Gráfica scroll
 }
 ```
 
@@ -305,12 +378,13 @@ El demo usa la configuración completa. Para proyectos propios, editar `libs/ssd
 
 ---
 
-## Tamaño del Demo
+## Tamaño de los Demos
 
-| Configuración | ROM | RAM |
-|---------------|-----|-----|
-| Demo completo (todo activado) | ~8 KB | ~640 B |
-| Solo reloj BigFont | ~2 KB | 0 |
+| Demo | ROM | RAM | Makefile |
+|------|-----|-----|----------|
+| Demo completo (main.c) | ~8 KB | ~640 B | `makefile` |
+| Demo framebuffer (main_fb_demo.c) | ~3 KB | ~640 B | `makefile_fb_demo` |
+| Solo reloj BigFont | ~2 KB | 0 | `makefile_clock` |
 
 ---
 

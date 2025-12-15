@@ -36,7 +36,7 @@ void delay(uint16_t count) {
 void delay_sec(uint8_t sec) {
     uint8_t s;
     for (s = 0; s < sec; s++) {
-        delay(60000);
+        delay(30000);  /* Reducido a ~0.5 seg */
     }
 }
 
@@ -53,6 +53,7 @@ void demo_text(void) {
     ssd1306_text(0, 3, "abcdefghijklmnop");
     delay_sec(1);
     
+#if SSD1306_USE_TEXT_INV
     /* Texto invertido */
     uart_puts("   Texto invertido\r\n");
     ssd1306_clear();
@@ -61,6 +62,7 @@ void demo_text(void) {
     ssd1306_text(0, 2, "Invertido:");
     ssd1306_text_inv(66, 2, "Hola");
     delay_sec(1);
+#endif
 }
 
 /* ============================================
@@ -74,10 +76,12 @@ void demo_numbers(void) {
     ssd1306_number(60, 0, 12345);
     ssd1306_text(0, 1, "Negativo:");
     ssd1306_number_signed(60, 1, -9876);
+#if SSD1306_USE_NUMBERS_HEX
     ssd1306_text(0, 2, "Hex 8b:");
     ssd1306_hex8(60, 2, 0xAB);
     ssd1306_text(0, 3, "Hex 16b:");
     ssd1306_hex16(60, 3, 0xCAFE);
+#endif
     delay_sec(1);
 }
 
@@ -109,7 +113,7 @@ void demo_bigfont(void) {
     ssd1306_clear();
     for (i = 0; i < 10; i++) {
         ssd1306_bigchar(56, BIGFONT_CENTER, '0' + i);
-        delay(15000);
+        delay(8000);
     }
     
     /* Reloj */
@@ -142,15 +146,17 @@ void demo_graphics(void) {
     ssd1306_rect(70, 2, 30, 2);
     delay_sec(1);
     
+#if SSD1306_USE_PROGRESS
     /* Barra de progreso */
     ssd1306_clear();
     ssd1306_text(0, 0, "Progreso:");
-    for (i = 0; i <= 100; i += 5) {
+    for (i = 0; i <= 100; i += 10) {
         ssd1306_progress_bar(0, 2, 128, i);
-        delay(5000);
+        delay(2000);
     }
-    delay_sec(1);
+#endif
     
+#if SSD1306_USE_ICONS
     /* Iconos */
     ssd1306_clear();
     ssd1306_text(0, 0, "Iconos 8x8:");
@@ -159,11 +165,13 @@ void demo_graphics(void) {
     ssd1306_icon8(80, 2, icon_heart);
     ssd1306_icon8(110, 2, icon_star);
     delay_sec(1);
+#endif
 }
 
 /* ============================================
  * DEMO 5: Scroll
  * ============================================ */
+#if SSD1306_USE_SCROLL
 void demo_scroll(void) {
     uart_puts("Demo 5: Scroll\r\n");
     
@@ -174,19 +182,21 @@ void demo_scroll(void) {
     ssd1306_text(0, 3, "  6502 FPGA  ");
     
     /* Scroll izquierda */
-    ssd1306_scroll_left(0, 3, 7);
-    delay_sec(2);
+    ssd1306_scroll_left(0, 3, 5);
+    delay_sec(1);
     ssd1306_scroll_stop();
     
     /* Scroll derecha */
-    ssd1306_scroll_right(0, 3, 7);
-    delay_sec(2);
+    ssd1306_scroll_right(0, 3, 5);
+    delay_sec(1);
     ssd1306_scroll_stop();
 }
+#endif
 
 /* ============================================
  * DEMO 6: Control display
  * ============================================ */
+#if SSD1306_USE_CONTROL
 void demo_control(void) {
     uint8_t i;
     
@@ -197,14 +207,14 @@ void demo_control(void) {
     ssd1306_text(0, 2, "Contraste...");
     
     /* Bajar contraste */
-    for (i = 255; i > 0; i -= 25) {
+    for (i = 255; i > 0; i -= 50) {
         ssd1306_set_contrast(i);
-        delay(10000);
+        delay(5000);
     }
     /* Subir contraste */
-    for (i = 0; i < 255; i += 25) {
+    for (i = 0; i < 255; i += 50) {
         ssd1306_set_contrast(i);
-        delay(10000);
+        delay(5000);
     }
     ssd1306_set_contrast(0x8F); /* Normal */
     
@@ -217,6 +227,7 @@ void demo_control(void) {
     ssd1306_invert(0);
     delay_sec(1);
 }
+#endif /* SSD1306_USE_CONTROL */
 
 /* ============================================
  * DEMO 7: Framebuffer (píxeles individuales)
@@ -244,6 +255,7 @@ void demo_framebuffer(void) {
     fb_flush();
     delay_sec(1);
     
+#if SSD1306_USE_FB_CIRCLE
     /* Círculos */
     uart_puts("   Circulos\r\n");
     fb_clear();
@@ -252,6 +264,7 @@ void demo_framebuffer(void) {
     fb_circle(64, 16, 10);      /* Círculo central */
     fb_flush();
     delay_sec(1);
+#endif
     
 #if SSD1306_USE_FB_FILL
     /* Círculos rellenos */
@@ -273,6 +286,7 @@ void demo_framebuffer(void) {
     delay_sec(1);
 #endif
     
+#if SSD1306_USE_FB_CIRCLE
     /* Animación: círculo moviéndose */
     uart_puts("   Animacion\r\n");
     for (x = 10; x < 118; x += 4) {
@@ -281,6 +295,7 @@ void demo_framebuffer(void) {
         fb_flush();
         delay(3000);
     }
+#endif
     
 #if SSD1306_USE_FB_PLOT
     /* Gráfica de datos */
@@ -296,7 +311,7 @@ void demo_framebuffer(void) {
         fb_set_pixel(i, 31 - (y >> 1));  /* Escalar a 0-31 */
     }
     fb_flush();
-    delay_sec(2);
+    delay_sec(1);
 #endif
     
     /* Patrón de píxeles */
@@ -337,9 +352,13 @@ int main(void) {
         demo_numbers();
         demo_bigfont();
         demo_graphics();
+#if SSD1306_USE_SCROLL
         demo_scroll();
+#endif
+#if SSD1306_USE_CONTROL
         demo_control();
-#if SSD1306_USE_FRAMEBUFFER
+#endif
+#if 0  /* Framebuffer deshabilitado temporalmente */
         demo_framebuffer();
 #endif
         

@@ -42,6 +42,7 @@ INCLUDES = -I$(UART_DIR) -I$(I2C_DIR) -I$(SSD1306_DIR)
 MAIN_OBJ = $(BUILD_DIR)/main.o
 UART_OBJ = $(BUILD_DIR)/uart.o
 I2C_OBJ = $(BUILD_DIR)/i2c.o
+STARTUP_OBJ = $(BUILD_DIR)/startup.o
 VECTORS_OBJ = $(BUILD_DIR)/simple_vectors.o
 
 # ============================================
@@ -55,6 +56,7 @@ SSD1306_NUMBERS_OBJ = $(BUILD_DIR)/ssd1306_numbers.o
 SSD1306_BIGNUM_OBJ = $(BUILD_DIR)/ssd1306_bignum.o
 SSD1306_GRAPHICS_OBJ = $(BUILD_DIR)/ssd1306_graphics.o
 SSD1306_SCROLL_OBJ = $(BUILD_DIR)/ssd1306_scroll.o
+SSD1306_FRAMEBUFFER_OBJ = $(BUILD_DIR)/ssd1306_framebuffer.o
 
 # ============================================
 # SELECCIÓN DE MÓDULOS
@@ -68,9 +70,10 @@ SSD1306_OBJS += $(SSD1306_NUMBERS_OBJ)
 SSD1306_OBJS += $(SSD1306_BIGNUM_OBJ)
 SSD1306_OBJS += $(SSD1306_GRAPHICS_OBJ)
 SSD1306_OBJS += $(SSD1306_SCROLL_OBJ)
+SSD1306_OBJS += $(SSD1306_FRAMEBUFFER_OBJ)
 
 # Todos los objetos
-OBJS = $(MAIN_OBJ) $(UART_OBJ) $(I2C_OBJ) $(SSD1306_OBJS) $(VECTORS_OBJ)
+OBJS = $(MAIN_OBJ) $(UART_OBJ) $(I2C_OBJ) $(STARTUP_OBJ) $(SSD1306_OBJS) $(VECTORS_OBJ)
 
 # ============================================
 # TARGET PRINCIPAL
@@ -110,6 +113,10 @@ $(I2C_OBJ): $(I2C_DIR)/i2c.c
 
 # Vectores
 $(VECTORS_OBJ): $(SRC_DIR)/simple_vectors.s
+	$(CA65) -t none -o $@ $<
+
+# Startup
+$(STARTUP_OBJ): $(SRC_DIR)/startup.s
 	$(CA65) -t none -o $@ $<
 
 # ============================================
@@ -155,6 +162,11 @@ $(SSD1306_GRAPHICS_OBJ): $(SSD1306_DIR)/graphics/ssd1306_graphics.c
 $(SSD1306_SCROLL_OBJ): $(SSD1306_DIR)/scroll/ssd1306_scroll.c
 	$(CC65) $(CFLAGS) -I$(I2C_DIR) -I$(SSD1306_DIR) -o $(BUILD_DIR)/ssd1306_scroll.s $<
 	$(CA65) -t none -o $@ $(BUILD_DIR)/ssd1306_scroll.s
+
+# Framebuffer
+$(SSD1306_FRAMEBUFFER_OBJ): $(SSD1306_DIR)/framebuffer/ssd1306_framebuffer.c
+	$(CC65) $(CFLAGS) -I$(I2C_DIR) -I$(SSD1306_DIR) -o $(BUILD_DIR)/ssd1306_framebuffer.s $<
+	$(CA65) -t none -o $@ $(BUILD_DIR)/ssd1306_framebuffer.s
 
 # ============================================
 # ENLAZADO
